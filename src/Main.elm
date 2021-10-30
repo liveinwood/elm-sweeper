@@ -39,18 +39,18 @@ neighbours ( x, y ) =
                 [ -1, 0, 1 ]
                     |> LE.andThen
                         (\b ->
-                            if a == 0 && b == 0 then
-                                []
+                            if x + a >= 0 && x + a <= width && y + b >= 0 && y + b <= width then
+                                [ ( x + a, y + b ) ]
 
                             else
-                                [ ( x + a, y + b ) ]
+                                []
                         )
             )
 
 
 aroundFalseCount : ( Int, Int ) -> Array (Array Bool) -> Int
 aroundFalseCount ( x, y ) array2d =
-    neighbours ( x, y ) |> List.map (get array2d) |> List.filter (\b -> b == False) |> List.length
+    neighbours ( x, y ) |> List.map (get array2d) |> List.filter (\b -> not b) |> List.length
 
 
 initialize : Array (Array Bool) -> Matrix Cell
