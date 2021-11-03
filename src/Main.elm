@@ -1,7 +1,9 @@
 module Main exposing (..)
 
 import Array exposing (Array)
-import Html exposing (a)
+import Browser
+import Dict exposing (update)
+import Html as H exposing (Html)
 import List.Extra as LE
 import Matrix as M exposing (Matrix)
 import Random as R exposing (Generator)
@@ -9,7 +11,53 @@ import Random.Array as RA
 
 
 
+-- MAIN
+
+
+main =
+    Browser.element
+        { init = init
+        , update = update
+        , subscriptions = \_ -> Sub.none
+        , view = view
+        }
+
+
+
 -- MODEL
+
+
+type alias Model =
+    Matrix Cell
+
+
+init : () -> ( Model, Cmd Msg )
+init _ =
+    ( M.empty, R.generate InitMatrix random2DBoolGenerator )
+
+
+
+-- UPDATE
+
+
+type Msg
+    = InitMatrix (Array (Array Bool))
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        InitMatrix array ->
+            ( initialize array, Cmd.none )
+
+
+
+-- VIEW
+
+
+view : Model -> Html Msg
+view model =
+    H.div [] []
 
 
 width : Int
@@ -74,6 +122,15 @@ initialize array2d =
             Array.length (Maybe.withDefault Array.empty (Array.get 0 array2d))
     in
     M.initialize h w (\x y -> Cell False (getWithDefault False array2d ( x, y )) (aroundFalseCount ( x, y ) array2d))
+
+
+toArray : Matrix Cell -> List (Array Cell)
+toArray m =
+    let
+        ( rows, _ ) =
+            M.size m
+    in
+    List.map (M.getXs m) (List.range 0 (rows - 1))
 
 
 type alias Cell =
