@@ -2,18 +2,21 @@ module Main exposing (..)
 
 import Array exposing (Array)
 import Browser
-import Dict exposing (update)
 import Html as H exposing (Html)
 import List.Extra as LE
 import Matrix as M exposing (Matrix)
 import Random as R exposing (Generator)
 import Random.Array as RA
+import Random.Char exposing (yijingHexagramSymbol)
+import Set as S exposing (Set)
+import Set.Extra as SE
 
 
 
 -- MAIN
 
 
+main : Program () Model Msg
 main =
     Browser.element
         { init = init
@@ -44,6 +47,10 @@ type Msg
     = InitMatrix (Array (Array Bool))
 
 
+
+-- | Open ( Int, Int )
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -52,12 +59,35 @@ update msg model =
 
 
 
+-- Open ( x, y ) ->
+--     ( open ( x, y ) model, Cmd.none )
 -- VIEW
 
 
 view : Model -> Html Msg
 view model =
-    H.div [] []
+    H.div [] [ table (toList model) ]
+
+
+table : List (List Cell) -> Html Msg
+table lists =
+    H.table [] (List.map tr lists)
+
+
+tr : List Cell -> Html Msg
+tr cells =
+    H.tr [] (List.map td cells)
+
+
+td : Cell -> Html Msg
+td cell =
+    H.td []
+        [ if cell.safe then
+            H.text (String.fromInt cell.count)
+
+          else
+            H.text "●"
+        ]
 
 
 width : Int
@@ -85,7 +115,29 @@ get array2d ( x, y ) =
     Array.get x array2d |> Maybe.andThen (Array.get y)
 
 
-neighbours : ( Int, Int ) -> Array (Array Bool) -> List Bool
+neighboursXY : ( Int, Int ) -> Array (Array a) -> List ( Int, Int )
+neighboursXY ( x, y ) array2d =
+    [ -1, 0, 1 ]
+        |> LE.andThen
+            (\a ->
+                [ -1, 0, 1 ]
+                    |> LE.andThen
+                        (\b ->
+                            if a /= 0 || b /= 0 then
+                                case get array2d ( x + a, y + b ) of
+                                    Just _ ->
+                                        [ ( x + a, y + b ) ]
+
+                                    Nothing ->
+                                        []
+
+                            else
+                                []
+                        )
+            )
+
+
+neighbours : ( Int, Int ) -> Array (Array a) -> List a
 neighbours ( x, y ) array2d =
     [ -1, 0, 1 ]
         |> LE.andThen
@@ -124,13 +176,37 @@ initialize array2d =
     M.initialize h w (\x y -> Cell False (getWithDefault False array2d ( x, y )) (aroundFalseCount ( x, y ) array2d))
 
 
-toArray : Matrix Cell -> List (Array Cell)
-toArray m =
+
+-- open : (Int, Int) -> Matrix Cell -> Matrix Cell
+-- open (x, y) m =
+
+
+toBeOpened : ( Int, Int ) -> Set ( Int, Int ) -> Matrix Cell -> Set ( Int, Int )
+toBeOpened ( x, y ) acc m =
     let
-        ( rows, _ ) =
-            M.size m
+        cell =
+            M.get m x y
     in
-    List.map (M.getXs m) (List.range 0 (rows - 1))
+    case cell of
+        Just c ->
+            if c.count > 0 then
+                -- S.singleton ( x, y )
+                S.empty
+
+            else
+                let
+                    opened =
+                        S.diff (S.union (S.singleton ( x, y )) (S.fromList (neighboursXY ( x, y ) m))) acc
+                in
+                S.union opened (SE.concatMap (\( a, b ) -> toBeOpened ( a, b ) opened m) opened)
+
+        Nothing ->
+            S.empty
+
+
+toList : Matrix Cell -> List (List Cell)
+toList m =
+    Array.map Array.toList m |> Array.toList
 
 
 type alias Cell =

@@ -5,6 +5,7 @@ import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
 import Main exposing (..)
 import Matrix as M exposing (Matrix)
+import Set
 import Test exposing (..)
 
 
@@ -157,4 +158,213 @@ test3 =
                             ]
                 in
                 Expect.equal matrix expect
+        ]
+
+
+test4 : Test
+test4 =
+    describe
+        "toBeOpened test1"
+        [ test "test1" <|
+            \_ ->
+                let
+                    array =
+                        make2dArrayFrom2dList
+                            [ [ True, False, True, False ]
+                            , [ False, True, False, True ]
+                            , [ True, False, True, False ]
+                            , [ False, True, False, True ]
+                            ]
+
+                    matrix =
+                        initialize array
+
+                    output =
+                        toBeOpened ( 0, 0 ) Set.empty matrix
+
+                    expect =
+                        Set.empty
+                in
+                Expect.equalSets expect output
+        , test "test2" <|
+            \_ ->
+                let
+                    array =
+                        make2dArrayFrom2dList
+                            [ [ True, False, True, False ]
+                            , [ False, True, False, True ]
+                            , [ True, False, True, False ]
+                            , [ False, True, False, True ]
+                            ]
+
+                    matrix =
+                        initialize array
+
+                    output =
+                        toBeOpened ( 0, 2 ) Set.empty matrix
+
+                    expect =
+                        Set.empty
+                in
+                Expect.equalSets expect output
+        , test "test3" <|
+            \_ ->
+                let
+                    array =
+                        make2dArrayFrom2dList
+                            [ [ True, False, True, False ]
+                            , [ False, True, False, True ]
+                            , [ True, False, True, False ]
+                            , [ False, True, False, True ]
+                            ]
+
+                    matrix =
+                        initialize array
+
+                    output =
+                        toBeOpened ( 2, 2 ) Set.empty matrix
+
+                    expect =
+                        Set.empty
+                in
+                Expect.equalSets expect output
+        , test "test4" <|
+            \_ ->
+                let
+                    array =
+                        make2dArrayFrom2dList
+                            [ [ True, True, True, False ]
+                            , [ True, True, False, True ]
+                            , [ True, False, True, False ]
+                            , [ False, True, False, True ]
+                            ]
+
+                    matrix =
+                        initialize array
+
+                    output =
+                        toBeOpened ( 0, 0 ) Set.empty matrix
+
+                    expect =
+                        Set.fromList [ ( 0, 0 ), ( 0, 1 ), ( 1, 0 ), ( 1, 1 ) ]
+                in
+                Expect.equalSets expect output
+        , test "test5" <|
+            \_ ->
+                let
+                    array =
+                        make2dArrayFrom2dList
+                            [ [ True, True, True, False ]
+                            , [ True, True, True, True ]
+                            , [ True, True, True, False ]
+                            , [ False, True, False, True ]
+                            ]
+
+                    matrix =
+                        initialize array
+
+                    output =
+                        toBeOpened ( 0, 0 ) Set.empty matrix
+
+                    expect =
+                        Set.fromList [ ( 0, 0 ), ( 0, 1 ), ( 0, 2 ), ( 1, 0 ), ( 1, 1 ), ( 1, 2 ), ( 2, 0 ), ( 2, 1 ), ( 2, 2 ) ]
+                in
+                Expect.equalSets expect output
+        , test "test6" <|
+            \_ ->
+                let
+                    array =
+                        make2dArrayFrom2dList
+                            [ [ True, True, True, False ]
+                            , [ True, True, True, True ]
+                            , [ True, True, True, False ]
+                            , [ False, True, False, True ]
+                            ]
+
+                    matrix =
+                        initialize array
+
+                    output =
+                        toBeOpened ( 0, 1 ) Set.empty matrix
+
+                    expect =
+                        Set.fromList [ ( 0, 0 ), ( 0, 1 ), ( 0, 2 ), ( 1, 0 ), ( 1, 1 ), ( 1, 2 ), ( 2, 0 ), ( 2, 1 ), ( 2, 2 ) ]
+                in
+                Expect.equalSets expect output
+        , test "test7" <|
+            \_ ->
+                let
+                    array =
+                        make2dArrayFrom2dList
+                            [ [ True, True, True, False ]
+                            , [ True, True, True, True ]
+                            , [ True, True, True, False ]
+                            , [ False, True, False, True ]
+                            ]
+
+                    matrix =
+                        initialize array
+
+                    output =
+                        toBeOpened ( 1, 0 ) Set.empty matrix
+
+                    expect =
+                        Set.fromList [ ( 0, 0 ), ( 0, 1 ), ( 0, 2 ), ( 1, 0 ), ( 1, 1 ), ( 1, 2 ), ( 2, 0 ), ( 2, 1 ), ( 2, 2 ) ]
+                in
+                Expect.equalSets expect output
+        , test "test8" <|
+            \_ ->
+                let
+                    array =
+                        make2dArrayFrom2dList
+                            [ [ True, True, True, False ]
+                            , [ True, True, True, True ]
+                            , [ True, True, True, False ]
+                            , [ False, True, False, True ]
+                            ]
+
+                    matrix =
+                        initialize array
+
+                    output =
+                        toBeOpened ( 1, 1 ) Set.empty matrix
+
+                    expect =
+                        Set.fromList [ ( 0, 0 ), ( 0, 1 ), ( 0, 2 ), ( 1, 0 ), ( 1, 1 ), ( 1, 2 ), ( 2, 0 ), ( 2, 1 ), ( 2, 2 ) ]
+                in
+                Expect.equalSets expect output
+        , test "test9" <|
+            \_ ->
+                let
+                    array =
+                        make2dArrayFrom2dList
+                            [ [ True, True, True, True ]
+                            , [ True, True, True, True ]
+                            , [ True, True, True, True ]
+                            , [ False, True, False, True ]
+                            ]
+
+                    matrix =
+                        initialize array
+
+                    output =
+                        toBeOpened ( 0, 0 ) Set.empty matrix
+
+                    expect =
+                        Set.fromList
+                            [ ( 0, 0 )
+                            , ( 0, 1 )
+                            , ( 0, 2 )
+                            , ( 0, 3 )
+                            , ( 1, 0 )
+                            , ( 1, 1 )
+                            , ( 1, 2 )
+                            , ( 1, 3 )
+                            , ( 2, 0 )
+                            , ( 2, 1 )
+                            , ( 2, 2 )
+                            , ( 2, 3 )
+                            ]
+                in
+                Expect.equalSets expect output
         ]
