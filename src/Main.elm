@@ -7,7 +7,6 @@ import List.Extra as LE
 import Matrix as M exposing (Matrix)
 import Random as R exposing (Generator)
 import Random.Array as RA
-import Random.Char exposing (yijingHexagramSymbol)
 import Set as S exposing (Set)
 import Set.Extra as SE
 
@@ -45,6 +44,7 @@ init _ =
 
 type Msg
     = InitMatrix (Array (Array Bool))
+    | Open ( Int, Int )
 
 
 
@@ -57,10 +57,11 @@ update msg model =
         InitMatrix array ->
             ( initialize array, Cmd.none )
 
+        Open ( x, y ) ->
+            ( openAt ( x, y ) model, Cmd.none )
 
 
--- Open ( x, y ) ->
---     ( open ( x, y ) model, Cmd.none )
+
 -- VIEW
 
 
@@ -92,7 +93,7 @@ td cell =
 
 width : Int
 width =
-    5
+    10
 
 
 randomBoolGenerator : Generator Bool
@@ -176,9 +177,22 @@ initialize array2d =
     M.initialize h w (\x y -> Cell False (getWithDefault False array2d ( x, y )) (aroundFalseCount ( x, y ) array2d))
 
 
+openAt : ( Int, Int ) -> Matrix Cell -> Matrix Cell
+openAt ( x, y ) m =
+    let
+        opened =
+            toBeOpened ( x, y ) S.empty m
+    in
+    M.indexedMap (openCell opened) m
 
--- open : (Int, Int) -> Matrix Cell -> Matrix Cell
--- open (x, y) m =
+
+openCell : Set ( Int, Int ) -> Int -> Int -> Cell -> Cell
+openCell opens x y c =
+    if S.member ( x, y ) opens then
+        { c | opened = True }
+
+    else
+        c
 
 
 toBeOpened : ( Int, Int ) -> Set ( Int, Int ) -> Matrix Cell -> Set ( Int, Int )
@@ -190,15 +204,24 @@ toBeOpened ( x, y ) acc m =
     case cell of
         Just c ->
             if c.count > 0 then
-                -- S.singleton ( x, y )
-                S.empty
+                S.singleton ( x, y )
+                -- S.empty
 
             else
                 let
-                    opened =
-                        S.diff (S.union (S.singleton ( x, y )) (S.fromList (neighboursXY ( x, y ) m))) acc
+                    nei =
+                        S.fromList (neighboursXY ( x, y ) m)
+
+                    open =
+                        S.union (S.singleton ( x, y )) nei
+
+                    next =
+                        S.diff nei acc
+
+                    acc2 =
+                        S.union acc open
                 in
-                S.union opened (SE.concatMap (\( a, b ) -> toBeOpened ( a, b ) opened m) opened)
+                S.union open (SE.concatMap (\( a, b ) -> toBeOpened ( a, b ) acc2 m) next)
 
         Nothing ->
             S.empty
