@@ -98,7 +98,7 @@ test3 =
                         M.getXs (initialize array3) 0
 
                     expect =
-                        Array.fromList [ Cell False True 2, Cell False False 2, Cell False True 2 ]
+                        Array.fromList [ Cell ( 0, 0 ) CLOSED True 2, Cell ( 0, 1 ) CLOSED False 2, Cell ( 0, 2 ) CLOSED True 2 ]
                 in
                 Expect.equal row0 expect
         , test "test3" <|
@@ -115,7 +115,7 @@ test3 =
                         M.getXs (initialize array) 1
 
                     expect =
-                        Array.fromList [ Cell False False 2, Cell False True 4, Cell False False 2 ]
+                        Array.fromList [ Cell ( 1, 0 ) CLOSED False 2, Cell ( 1, 1 ) CLOSED True 4, Cell ( 1, 2 ) CLOSED False 2 ]
                 in
                 Expect.equal row1 expect
         , test "test4" <|
@@ -132,7 +132,7 @@ test3 =
                         M.getXs (initialize array) 2
 
                     expect =
-                        Array.fromList [ Cell False True 2, Cell False False 2, Cell False True 2 ]
+                        Array.fromList [ Cell ( 2, 0 ) CLOSED True 2, Cell ( 2, 1 ) CLOSED False 2, Cell ( 2, 2 ) CLOSED True 2 ]
                 in
                 Expect.equal row2 expect
         , test "test5" <|
@@ -151,10 +151,10 @@ test3 =
 
                     expect =
                         Array.fromList
-                            [ Array.fromList [ Cell False True 2, Cell False False 2, Cell False True 3, Cell False False 1 ]
-                            , Array.fromList [ Cell False False 2, Cell False True 4, Cell False False 4, Cell False True 3 ]
-                            , Array.fromList [ Cell False True 3, Cell False False 4, Cell False True 4, Cell False False 2 ]
-                            , Array.fromList [ Cell False False 1, Cell False True 3, Cell False False 2, Cell False True 2 ]
+                            [ Array.fromList [ Cell ( 0, 0 ) CLOSED True 2, Cell ( 0, 1 ) CLOSED False 2, Cell ( 0, 2 ) CLOSED True 3, Cell ( 0, 3 ) CLOSED False 1 ]
+                            , Array.fromList [ Cell ( 1, 0 ) CLOSED False 2, Cell ( 1, 1 ) CLOSED True 4, Cell ( 1, 2 ) CLOSED False 4, Cell ( 1, 3 ) CLOSED True 3 ]
+                            , Array.fromList [ Cell ( 2, 0 ) CLOSED True 3, Cell ( 2, 1 ) CLOSED False 4, Cell ( 2, 2 ) CLOSED True 4, Cell ( 2, 3 ) CLOSED False 2 ]
+                            , Array.fromList [ Cell ( 3, 0 ) CLOSED False 1, Cell ( 3, 1 ) CLOSED True 3, Cell ( 3, 2 ) CLOSED False 2, Cell ( 3, 3 ) CLOSED True 2 ]
                             ]
                 in
                 Expect.equal matrix expect

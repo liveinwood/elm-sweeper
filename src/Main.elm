@@ -3,6 +3,8 @@ module Main exposing (..)
 import Array exposing (Array)
 import Browser
 import Html as H exposing (Html)
+import Html.Attributes as H exposing (width)
+import Html.Events.Extra.Mouse as MS
 import List.Extra as LE
 import Matrix as M exposing (Matrix)
 import Random as R exposing (Generator)
@@ -29,13 +31,35 @@ main =
 -- MODEL
 
 
+type CellStatus
+    = OPENED
+    | FLAGED
+    | CLOSED
+
+
+type GameStatus
+    = PLAYING
+    | WIN
+    | LOOSE
+
+
 type alias Model =
-    Matrix Cell
+    { status : GameStatus
+    , board : Matrix Cell
+    , safeCellCount : Int
+    , openedCellCount : Int
+    }
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( M.empty, R.generate InitMatrix random2DBoolGenerator )
+    ( { status = PLAYING
+      , board = M.empty
+      , safeCellCount = 0
+      , openedCellCount = 0
+      }
+    , R.generate InitMatrix random2DBoolGenerator
+    )
 
 
 
@@ -55,10 +79,16 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         InitMatrix array ->
-            ( initialize array, Cmd.none )
+            ( { status = PLAYING
+              , board = initialize array
+              , safeCellCount = totalSafeCellCount array
+              , openedCellCount = 0
+              }
+            , Cmd.none
+            )
 
         Open ( x, y ) ->
-            ( openAt ( x, y ) model, Cmd.none )
+            ( open ( x, y ) model, Cmd.none )
 
 
 
@@ -67,12 +97,27 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    H.div [] [ table (toList model) ]
+    H.div []
+        [ table (toList model.board)
+        , H.p []
+            [ if model.status == PLAYING then
+                -- H.text ("safe cell count = " ++ String.fromInt model.safeCellCount ++ " opened cell count = " ++ String.fromInt model.openedCellCount)
+                H.text ""
+
+              else if model.status == WIN then
+                H.text "GAME CLEAR"
+
+              else
+                H.text "GAME OVER"
+            ]
+        ]
 
 
 table : List (List Cell) -> Html Msg
 table lists =
-    H.table [] (List.map tr lists)
+    H.table
+        []
+        (List.map tr lists)
 
 
 tr : List Cell -> Html Msg
@@ -82,12 +127,45 @@ tr cells =
 
 td : Cell -> Html Msg
 td cell =
-    H.td []
-        [ if cell.safe then
-            H.text (String.fromInt cell.count)
+    let
+        color =
+            if cell.status == CLOSED then
+                "#808080"
+
+            else
+                "C0C0C0"
+    in
+    H.td
+        [ H.style "text-align" "center"
+        , H.style "vertical-align" "middle"
+        , H.style "border" "1px #2b2b2b solid"
+        , H.style "width" "28px"
+        , H.style "height" "28px"
+        , H.style "background-color" color
+        ]
+        [ if cell.status == OPENED then
+            H.text
+                (if cell.safe then
+                    if cell.count > 0 then
+                        String.fromInt cell.count
+
+                    else
+                        ""
+
+                 else
+                    "●"
+                )
+
+          else if cell.status == CLOSED then
+            H.button
+                [ H.style "width" "100%"
+                , H.style "height" "100%"
+                , MS.onClick (\_ -> Open cell.pos)
+                ]
+                []
 
           else
-            H.text "●"
+            H.text ""
         ]
 
 
@@ -98,7 +176,7 @@ width =
 
 randomBoolGenerator : Generator Bool
 randomBoolGenerator =
-    R.map (\i -> i == 0) (R.int 0 1)
+    R.map (\i -> i >= 1) (R.int 0 5)
 
 
 random2DBoolGenerator : Generator (Array (Array Bool))
@@ -109,6 +187,36 @@ random2DBoolGenerator =
 getWithDefault : a -> Array (Array a) -> ( Int, Int ) -> a
 getWithDefault d array2d ( x, y ) =
     get array2d ( x, y ) |> Maybe.withDefault d
+
+
+totalSafeCellCount : Array (Array Bool) -> Int
+totalSafeCellCount =
+    totalCount (\a -> a == True)
+
+
+totalOpenedCount : Array (Array Cell) -> Int
+totalOpenedCount =
+    totalCount (\c -> c.status == OPENED)
+
+
+totalCount : (a -> Bool) -> Array (Array a) -> Int
+totalCount pred m =
+    m
+        |> Array.map
+            (Array.foldl
+                (\a ->
+                    \n ->
+                        n
+                            + (if pred a then
+                                1
+
+                               else
+                                0
+                              )
+                )
+                0
+            )
+        |> Array.foldl (+) 0
 
 
 get : Array (Array a) -> ( Int, Int ) -> Maybe a
@@ -174,22 +282,54 @@ initialize array2d =
         w =
             Array.length (Maybe.withDefault Array.empty (Array.get 0 array2d))
     in
-    M.initialize h w (\x y -> Cell False (getWithDefault False array2d ( x, y )) (aroundFalseCount ( x, y ) array2d))
+    M.initialize h w (\x y -> Cell ( x, y ) CLOSED (getWithDefault False array2d ( x, y )) (aroundFalseCount ( x, y ) array2d))
 
 
-openAt : ( Int, Int ) -> Matrix Cell -> Matrix Cell
-openAt ( x, y ) m =
+open : ( Int, Int ) -> Model -> Model
+open ( x, y ) model =
+    case M.get model.board x y of
+        Just c ->
+            if c.safe then
+                openAt ( x, y ) model
+
+            else
+                { model | board = openAllCell model.board, status = LOOSE }
+
+        Nothing ->
+            model
+
+
+openAllCell : Matrix Cell -> Matrix Cell
+openAllCell m =
+    M.map (\c -> { c | status = OPENED }) m
+
+
+openAt : ( Int, Int ) -> Model -> Model
+openAt ( x, y ) model =
     let
         opened =
-            toBeOpened ( x, y ) S.empty m
+            toBeOpened ( x, y ) S.empty model.board
+
+        newBoard =
+            M.indexedMap (openCell opened) model.board
+
+        newOpenedCellCount =
+            totalOpenedCount newBoard
+
+        newGameStatus =
+            if model.safeCellCount == newOpenedCellCount then
+                WIN
+
+            else
+                PLAYING
     in
-    M.indexedMap (openCell opened) m
+    { model | board = newBoard, openedCellCount = newOpenedCellCount, status = newGameStatus }
 
 
 openCell : Set ( Int, Int ) -> Int -> Int -> Cell -> Cell
 openCell opens x y c =
     if S.member ( x, y ) opens then
-        { c | opened = True }
+        { c | status = OPENED }
 
     else
         c
@@ -212,16 +352,16 @@ toBeOpened ( x, y ) acc m =
                     nei =
                         S.fromList (neighboursXY ( x, y ) m)
 
-                    open =
+                    opened =
                         S.union (S.singleton ( x, y )) nei
 
                     next =
                         S.diff nei acc
 
                     acc2 =
-                        S.union acc open
+                        S.union acc opened
                 in
-                S.union open (SE.concatMap (\( a, b ) -> toBeOpened ( a, b ) acc2 m) next)
+                S.union opened (SE.concatMap (\( a, b ) -> toBeOpened ( a, b ) acc2 m) next)
 
         Nothing ->
             S.empty
@@ -233,7 +373,8 @@ toList m =
 
 
 type alias Cell =
-    { opened : Bool
+    { pos : ( Int, Int )
+    , status : CellStatus
     , safe : Bool
     , count : Int
     }
